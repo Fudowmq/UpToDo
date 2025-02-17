@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.0'  // Убедись, что у тебя есть эта строка
+        classpath 'com.google.gms:google-services:4.4.0'  // 🔥 Добавь эту строку для Firebase
+    }
+}
+
 allprojects {
     repositories {
         google()
