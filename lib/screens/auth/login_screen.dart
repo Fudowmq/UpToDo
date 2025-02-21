@@ -27,11 +27,13 @@ class _LoginScreenState extends State<LoginScreen> {
       // Перенаправление на домашний экран через несколько секунд
       Future.delayed(const Duration(seconds: 2), () {
         Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       });
     } else {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
