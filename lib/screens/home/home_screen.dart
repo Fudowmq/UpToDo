@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -104,14 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
-              primary: Colors.blue, // Синее выделение даты
-              onPrimary: Colors.white, // Белый текст на кнопках
-              onSurface: Colors.white, // Белый текст на фоне
+              primary: Colors.blue, 
+              onPrimary: Colors.white, 
+              onSurface: Colors.white, 
             ),
-            dialogBackgroundColor: Color(0xFF3A3A3A), // Светло-тёмный фон
+            dialogBackgroundColor: Color(0xFF3A3A3A), 
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, // Синие кнопки "Cancel" и "OK"
+                foregroundColor: Colors.blue, 
               ),
             ),
           ),
@@ -128,14 +127,14 @@ class _HomeScreenState extends State<HomeScreen> {
           return Theme(
             data: ThemeData.dark().copyWith(
               colorScheme: ColorScheme.dark(
-                primary: Colors.blue, // Синее выделение времени
-                onPrimary: Colors.white, // Белый текст на кнопках
-                onSurface: Colors.white, // Белый текст на фоне
+                primary: Colors.blue, 
+                onPrimary: Colors.white, 
+                onSurface: Colors.white,
               ),
-              dialogBackgroundColor: Color(0xFF3A3A3A), // Светло-тёмный фон
+              dialogBackgroundColor: Color(0xFF3A3A3A), 
               textButtonTheme: TextButtonThemeData(
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue, // Синие кнопки "Cancel" и "OK"
+                  foregroundColor: Colors.blue, 
                 ),
               ),
             ),
@@ -231,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showPriorityDialog(BuildContext context) {
-    int? _tempSelectedPriority = _selectedPriority;
+    int? tempSelectedPriority = _selectedPriority;
 
     showDialog(
       context: context,
@@ -257,11 +256,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         return ChoiceChip(
                           avatar: Icon(Icons.flag, color: Colors.white),
                           label: Text("${index + 1}"),
-                          selected: _tempSelectedPriority == index + 1,
+                          selected: tempSelectedPriority == index + 1,
                           selectedColor: Colors.blue,
                           onSelected: (bool selected) {
                             setState(() {
-                              _tempSelectedPriority =
+                              tempSelectedPriority =
                                   selected ? index + 1 : null;
                             });
                           },
@@ -281,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              _selectedPriority = _tempSelectedPriority;
+                              _selectedPriority = tempSelectedPriority;
                             });
                             Navigator.of(context).pop();
                           },
