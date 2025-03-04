@@ -247,12 +247,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddTaskModal(BuildContext context) {
-    TextEditingController _taskController = TextEditingController();
-    TextEditingController _descController = TextEditingController();
-    DateTime? _selectedDateTime;
-    String _priority = "Normal"; // По умолчанию
+    TextEditingController taskController = TextEditingController();
+    TextEditingController descController = TextEditingController();
+    DateTime? selectedDateTime;
+    String priority = "Normal"; // По умолчанию
 
-    void _pickDateTime(BuildContext context) async {
+    void pickDateTime(BuildContext context) async {
       DateTime? pickedDate = await showDatePicker(
         context: context,
         initialDate: DateTime.now(),
@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         if (pickedTime != null) {
-          _selectedDateTime = DateTime(
+          selectedDateTime = DateTime(
             pickedDate.year,
             pickedDate.month,
             pickedDate.day,
@@ -278,9 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-
-    void _addTask() async {
-      if (_taskController.text.isEmpty || _selectedDateTime == null) {
+    void addTask() async {
+      if (taskController.text.isEmpty || selectedDateTime == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Заполните все поля!")),
         );
@@ -288,14 +287,14 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       await FirebaseFirestore.instance.collection("tasks").add({
-        "userId": FirebaseAuth.instance.currentUser?.uid,
-        "title": _taskController.text,
-        "description": _descController.text,
-        "time": _selectedDateTime!.toIso8601String(),
-        "priority": _priority,
+        "title": "Новая задача",
+        "description": "Описание",
+        "time": FieldValue.serverTimestamp(), // Храним как Timestamp
+        "priority": 3,
         "completed": false,
+        "userId":
+            FirebaseAuth.instance.currentUser?.uid, // Должен быть не пустым!
       });
-
       Navigator.pop(context); // Закрываем модальное окно
     }
 
@@ -323,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: _taskController,
+                controller: taskController,
                 decoration: InputDecoration(
                   hintText: "Task Name",
                   border: OutlineInputBorder(
@@ -335,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 10),
               TextField(
-                controller: _descController,
+                controller: descController,
                 decoration: InputDecoration(
                   hintText: "Description",
                   border: OutlineInputBorder(
@@ -351,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.timer),
                     onPressed: () {
-                      _pickDateTime(context);
+                      pickDateTime(context);
                     },
                   ),
                   SizedBox(width: 10),
@@ -366,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Spacer(),
                   IconButton(
                     icon: const Icon(Icons.send, color: Colors.blue),
-                    onPressed: _addTask,
+                    onPressed: addTask,
                   ),
                 ],
               ),
@@ -377,91 +376,130 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-void _showPriorityDialog(BuildContext context) {
-  int? tempSelectedPriority = _selectedPriority; // Копируем текущее значение
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Выберите приоритет",
-                      style: TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                  const Divider(),
-                  Wrap(
-                    spacing: 12.0,
-                    runSpacing: 12.0,
-                    children: List.generate(10, (index) {
-                      int priority = index + 1;
-                      return ChoiceChip(
-                        avatar: Image.asset(
-                          "assets/image/flag.png",
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.flag, color: Colors.red);
-                          },
-                        ),
-                        label: Text("$priority"),
-                        labelStyle: TextStyle(
-                          color: tempSelectedPriority == priority
-                              ? Colors.white
-                              : Colors.black,
-                        ),
-                        selected: tempSelectedPriority == priority,
-                        selectedColor: Colors.blue,
-                        backgroundColor: Colors.grey[300],
-                        onSelected: (bool selected) {
-                          setState(() {
-                            tempSelectedPriority = selected ? priority : tempSelectedPriority;
-                          });
-                        },
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                            foregroundColor: Colors.blue),
-                        child: const Text("Отмена"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (tempSelectedPriority != null) {
-                            setState(() {
-                              _selectedPriority = tempSelectedPriority; // Обновляем значение
-                            });
-                          }
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text("Сохранить"),
-                      ),
-                    ],
-                  ),
-                ],
+  void _showPriorityDialog(BuildContext context) {
+    int? tempSelectedPriority = _selectedPriority;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
+              backgroundColor:
+                  const Color.fromARGB(255, 55, 55, 55), // Светлый фон
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Task Priority",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Divider(),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3, // 3 столбца
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.2, // Отношение сторон
+                      ),
+                      itemCount: 10,
+                      itemBuilder: (context, index) {
+                        int priority = index + 1;
+                        bool isSelected = tempSelectedPriority == priority;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempSelectedPriority = priority;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.blue
+                                  : const Color.fromARGB(255, 110, 108, 108),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  "assets/image/flag.png",
+                                  width: 24,
+                                  height: 24,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.flag,
+                                        color: Colors.red);
+                                  },
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "$priority",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                          ),
+                          child: const Text("Cancel"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (tempSelectedPriority != null) {
+                              setState(() {
+                                _selectedPriority =
+                                    tempSelectedPriority; // Обновляем значение
+                              });
+                            }
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text("Save"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreenDB extends StatelessWidget {
+  const HomeScreenDB({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,7 +30,7 @@ class HomeScreenDB extends StatelessWidget {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               var task = tasks[index];
-              int priority = int.tryParse(task["priority"].toString()) ?? 1; // ✅ Теперь точно число!
+              int priority = int.tryParse(task["priority"].toString()) ?? 1; 
 
               return ListTile(
                 leading: Image.asset("assets/image/flag.png", width: 24, height: 24),
