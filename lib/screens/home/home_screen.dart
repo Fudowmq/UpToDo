@@ -77,62 +77,145 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               var task = tasks[index];
+
               return Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 3.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
+                child: Dismissible(
+                  key: Key(task.id), // Уникальный ключ для анимации удаления
+                  direction: DismissDirection
+                      .startToEnd, // Проведение влево для удаления
+                  onDismissed: (direction) {
+                    FirebaseFirestore.instance
+                        .collection("tasks")
+                        .doc(task.id)
+                        .delete();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text("Задача '${task["title"]}' удалена")),
+                    );
+                  },
+                  background: Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    color: Colors.red,
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16.0),
-                    title: Text(
-                      task["title"],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        "${task["description"]} | ${DateTime.parse(task["time"]).toLocal()} | ${task["priority"]}",
-                        style: TextStyle(
-                            fontSize: 14, color: Colors.grey.shade700),
-                      ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: task["completed"],
-                          onChanged: (value) {
-                            FirebaseFirestore.instance
-                                .collection("tasks")
-                                .doc(task.id)
-                                .update({"completed": value});
-                          },
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            FirebaseFirestore.instance
-                                .collection("tasks")
-                                .doc(task.id)
-                                .delete();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.delete,
-                                color: Colors.white, size: 20),
-                          ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
                       ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Верхняя строка (чекбокс + название)
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  FirebaseFirestore.instance
+                                      .collection("tasks")
+                                      .doc(task.id)
+                                      .delete();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            "Задача '${task["title"]}' выполнена и удалена")),
+                                  );
+                                },
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 2),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  task["title"],
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 5),
+
+                          // Время выполнения
+                          Text(
+                            task["time"] != null
+                                ? "Today At ${TimeOfDay.fromDateTime(task["time"].toDate()).format(context)}"
+                                : "No time set",
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey[400]),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // Нижняя строка (категория + приоритет)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Категория
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[800],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.school,
+                                        color: Colors.white, size: 16),
+                                    const SizedBox(width: 5),
+                                    Text("University",
+                                        style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                              ),
+
+                              // Приоритет (флажок)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey[700]!),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.flag,
+                                        color: Colors.grey[400], size: 16),
+                                    const SizedBox(width: 5),
+                                    Text("${task["priority"]}",
+                                        style:
+                                            TextStyle(color: Colors.grey[400])),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -290,12 +373,12 @@ class _HomeScreenState extends State<HomeScreen> {
         "title": "Новая задача",
         "description": "Описание",
         "time": FieldValue.serverTimestamp(), // Храним как Timestamp
-        "priority": 3,
+        "priority": 10,
         "completed": false,
         "userId":
             FirebaseAuth.instance.currentUser?.uid, // Должен быть не пустым!
       });
-      Navigator.pop(context); // Закрываем модальное окно
+      Navigator.pop(context);
     }
 
     showModalBottomSheet(

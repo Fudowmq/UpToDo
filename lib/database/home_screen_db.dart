@@ -7,6 +7,9 @@ class HomeScreenDB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(
+        "Текущий userId: ${FirebaseAuth.instance.currentUser?.uid}"); // Выводим userId в консоль
+
     return Scaffold(
       appBar: AppBar(title: const Text("Мои задачи")),
       body: StreamBuilder<QuerySnapshot>(
@@ -30,10 +33,11 @@ class HomeScreenDB extends StatelessWidget {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               var task = tasks[index];
-              int priority = int.tryParse(task["priority"].toString()) ?? 1; 
+              int priority = int.tryParse(task["priority"].toString()) ?? 1;
 
               return ListTile(
-                leading: Image.asset("assets/image/flag.png", width: 24, height: 24),
+                leading:
+                    Image.asset("assets/image/flag.png", width: 24, height: 24),
                 title: Text(task["title"]),
                 subtitle: Text(
                   "${task["description"]} | ${DateTime.parse(task["time"]).toLocal()} | Приоритет: $priority",
