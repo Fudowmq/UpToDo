@@ -6,13 +6,35 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
   int? _selectedPriority;
+  String? _selectedCategory;
+
+  final List<Map<String, dynamic>> _categories = [
+    {
+      "name": "Grocery",
+      "icon": Icons.local_grocery_store,
+      "color": Colors.greenAccent
+    },
+    {"name": "Work", "icon": Icons.work, "color": Colors.orangeAccent},
+    {"name": "Sport", "icon": Icons.sports, "color": Colors.lightGreenAccent},
+    {
+      "name": "Design",
+      "icon": Icons.design_services,
+      "color": Colors.cyanAccent
+    },
+    {"name": "University", "icon": Icons.school, "color": Colors.blueAccent},
+    {"name": "Social", "icon": Icons.people, "color": Colors.pinkAccent},
+    {"name": "Music", "icon": Icons.music_note, "color": Colors.purpleAccent},
+    {"name": "Health", "icon": Icons.favorite, "color": Colors.tealAccent},
+    {"name": "Movie", "icon": Icons.movie, "color": Colors.lightBlueAccent},
+    {"name": "Home", "icon": Icons.home, "color": Colors.amberAccent},
+    {"name": "Create New", "icon": Icons.add, "color": Colors.white70},
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            // ✅ Показываем твой фон, если задач нет
             return Center(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 150),
@@ -69,6 +90,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
+          }
+
+          String _formatDateTime(DateTime dateTime, BuildContext context) {
+            DateTime now = DateTime.now();
+            DateTime today = DateTime(now.year, now.month, now.day);
+            DateTime tomorrow = today.add(const Duration(days: 1));
+            DateTime taskDate =
+                DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+            String dateString;
+            if (taskDate == today) {
+              dateString = "Today";
+            } else if (taskDate == tomorrow) {
+              dateString = "Tomorrow";
+            } else {
+              dateString = "${dateTime.day}.${dateTime.month}.${dateTime.year}";
+            }
+
+            String timeString =
+                TimeOfDay.fromDateTime(dateTime).format(context);
+            return "$dateString в $timeString";
           }
 
           var tasks = snapshot.data!.docs;
@@ -162,7 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Время выполнения
                           Text(
                             task["time"] != null
-                                ? "Today At ${TimeOfDay.fromDateTime(task["time"].toDate()).format(context)}"
+                                ? _formatDateTime(
+                                    task["time"].toDate().toLocal(), context)
                                 : "No time set",
                             style: TextStyle(
                                 fontSize: 14, color: Colors.grey[400]),
@@ -269,71 +312,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _pickDateTime(BuildContext context) async {
-    DateTime now = DateTime.now();
-    DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now,
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: Colors.blue,
-              onPrimary: Colors.white,
-              onSurface: Colors.white,
-            ),
-            dialogBackgroundColor: Color(0xFF3A3A3A),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue,
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedDate != null) {
-      TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-        builder: (context, child) {
-          return Theme(
-            data: ThemeData.dark().copyWith(
-              colorScheme: ColorScheme.dark(
-                primary: Colors.blue,
-                onPrimary: Colors.white,
-                onSurface: Colors.white,
-              ),
-              dialogBackgroundColor: Color(0xFF3A3A3A),
-              textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                ),
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
-
-      if (pickedTime != null) {
-        setState(() {
-          _selectedDate = pickedDate;
-          _selectedTime = pickedTime;
-        });
-      }
-    }
-  }
-
   void _showAddTaskModal(BuildContext context) {
     TextEditingController taskController = TextEditingController();
     TextEditingController descController = TextEditingController();
-    DateTime? selectedDateTime;
-    String priority = "Normal"; // По умолчанию
+
+    DateTime? selectedDateTime; // Добавляем переменную
 
     void pickDateTime(BuildContext context) async {
       DateTime? pickedDate = await showDatePicker(
@@ -357,28 +340,43 @@ class _HomeScreenState extends State<HomeScreen> {
             pickedTime.hour,
             pickedTime.minute,
           );
+          print("Выбрано время: $selectedDateTime"); // Отладка
         }
       }
     }
 
     void addTask() async {
-      if (taskController.text.isEmpty || selectedDateTime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Заполните все поля!")),
-        );
+      String title = taskController.text.trim();
+      String description = descController.text.trim();
+
+      if (title.isEmpty) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Введите название задачи")));
         return;
       }
 
-      await FirebaseFirestore.instance.collection("tasks").add({
-        "title": "Новая задача",
-        "description": "Описание",
-        "time": FieldValue.serverTimestamp(), // Храним как Timestamp
-        "priority": 10,
-        "completed": false,
-        "userId":
-            FirebaseAuth.instance.currentUser?.uid, // Должен быть не пустым!
-      });
-      Navigator.pop(context);
+      print("Название задачи: $title");
+      print("Описание задачи: $description");
+      print("Выбранная категория перед сохранением: $_selectedCategory");
+
+      try {
+        await FirebaseFirestore.instance.collection("tasks").add({
+          "title": title,
+          "description": description,
+          "time": selectedDateTime != null
+              ? Timestamp.fromDate(selectedDateTime!)
+              : null,
+          "priority": _selectedPriority,
+          "completed": false,
+          "category": _selectedCategory ??
+              "Без категории", // Устанавливаем "Без категории", если null
+          "userId": FirebaseAuth.instance.currentUser?.uid,
+        });
+
+        print("✅ Задача успешно добавлена! Категория: $_selectedCategory");
+      } catch (e) {
+        print("❌ Ошибка при добавлении задачи: $e");
+      }
     }
 
     showModalBottomSheet(
@@ -437,7 +435,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   SizedBox(width: 10),
-                  IconButton(icon: const Icon(Icons.label), onPressed: () {}),
+                  IconButton(
+                    icon: const Icon(Icons.label, color: Colors.white),
+                    onPressed: () {
+                      _showCategoryDialog(context);
+                    },
+                  ),
                   SizedBox(width: 10),
                   IconButton(
                     icon: const Icon(Icons.flag),
@@ -454,6 +457,76 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showCategoryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Center(
+            child: Text(
+              "Choose Category",
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: List.generate(_categories.length, (index) {
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _categories[index]["name"];
+                      print("Выбрана категория: $_selectedCategory"); // DEBUG
+                    });
+
+                    Navigator.pop(context);
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _categories[index]["color"],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _categories[index]["icon"],
+                          color: Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _categories[index]["name"],
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close", style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );
