@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          String _formatDateTime(DateTime dateTime, BuildContext context) {
+          String formatDateTime(DateTime dateTime, BuildContext context) {
             DateTime now = DateTime.now();
             DateTime today = DateTime(now.year, now.month, now.day);
             DateTime tomorrow = today.add(const Duration(days: 1));
@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Время выполнения
                           Text(
                             task["time"] != null
-                                ? _formatDateTime(
+                                ? formatDateTime(
                                     task["time"].toDate().toLocal(), context)
                                 : "No time set",
                             style: TextStyle(
@@ -213,16 +213,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 10),
 
-                          // Нижняя строка (категория + приоритет)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Категория
                               Container(
                                 padding: EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[800],
+                                  color: task["category"] == "Music"
+                                      ? Colors.purpleAccent
+                                      : task["category"] == "Movie"
+                                          ? Colors.lightBlueAccent
+                                          : task["category"] == "Work"
+                                              ? Colors.orangeAccent
+                                              : task["category"] == "Sport"
+                                                  ? Colors.lightGreenAccent
+                                                  : task["category"] == "Design"
+                                                      ? Colors.cyanAccent
+                                                      : task["category"] ==
+                                                              "University"
+                                                          ? Colors.blueAccent
+                                                          : task["category"] ==
+                                                                  "Social"
+                                                              ? Colors
+                                                                  .pinkAccent
+                                                              : task["category"] ==
+                                                                      "Health"
+                                                                  ? Colors
+                                                                      .tealAccent
+                                                                  : task["category"] ==
+                                                                          "Home"
+                                                                      ? Colors
+                                                                          .amberAccent
+                                                                      : task["category"] ==
+                                                                              "Grocery"
+                                                                          ? Colors
+                                                                              .greenAccent
+                                                                          : Colors
+                                                                              .grey, // Цвет по умолчанию
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
@@ -230,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icon(Icons.school,
                                         color: Colors.white, size: 16),
                                     const SizedBox(width: 5),
-                                    Text("University",
+                                    Text(task["category"] ?? "Без категории",
                                         style: TextStyle(color: Colors.white)),
                                   ],
                                 ),
@@ -355,10 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      print("Название задачи: $title");
-      print("Описание задачи: $description");
-      print("Выбранная категория перед сохранением: $_selectedCategory");
-
       try {
         await FirebaseFirestore.instance.collection("tasks").add({
           "title": title,
@@ -373,10 +397,8 @@ class _HomeScreenState extends State<HomeScreen> {
           "userId": FirebaseAuth.instance.currentUser?.uid,
         });
 
-        print("✅ Задача успешно добавлена! Категория: $_selectedCategory");
-      } catch (e) {
-        print("❌ Ошибка при добавлении задачи: $e");
-      }
+        // ignore: empty_catches
+      } catch (e) {}
     }
 
     showModalBottomSheet(
@@ -427,28 +449,36 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 12),
               Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween, // Раздвигаем элементы
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.timer),
-                    onPressed: () {
-                      pickDateTime(context);
-                    },
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: 0), // Минимальный отступ слева
+                    child: Row(
+                      // Группа иконок слева
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.timer),
+                          onPressed: () {
+                            pickDateTime(context);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.label),
+                          onPressed: () {
+                            _showCategoryDialog(context);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.flag),
+                          onPressed: () {
+                            _showPriorityDialog(context);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(width: 10),
-                  IconButton(
-                    icon: const Icon(Icons.label, color: Colors.white),
-                    onPressed: () {
-                      _showCategoryDialog(context);
-                    },
-                  ),
-                  SizedBox(width: 10),
-                  IconButton(
-                    icon: const Icon(Icons.flag),
-                    onPressed: () {
-                      _showPriorityDialog(context);
-                    },
-                  ),
-                  Spacer(),
                   IconButton(
                     icon: const Icon(Icons.send, color: Colors.blue),
                     onPressed: addTask,
