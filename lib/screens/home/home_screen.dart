@@ -322,6 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _buildNavItem(String iconPath, String label, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -339,6 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 
   void _showAddTaskModal(BuildContext context) {
     TextEditingController taskController = TextEditingController();
