@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uptodo/screens/home/calendar_screen.dart';
+import 'package:uptodo/screens/home/focus_screen.dart';
+import 'package:uptodo/screens/home/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -311,17 +314,35 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem("assets/image/home_icon.png", "Index", () {}),
-            _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {}),
+            _buildNavItem("assets/image/home_icon.png", "Home", () {}),
+            _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CalendarScreen()),
+              );
+            }),
             const SizedBox(width: 48), // Отступ под FloatingActionButton
-            _buildNavItem("assets/image/clock_icon.png", "Focus", () {}),
-            _buildNavItem("assets/image/profile_icon.png", "Profile", () {}),
+            _buildNavItem("assets/image/clock_icon.png", "Focus", () {
+              Navigator.push
+                (context, 
+                MaterialPageRoute(
+                  builder: (context) => 
+                    const FocusScreen())
+              );
+            }),
+            _buildNavItem("assets/image/profile_icon.png", "Profile", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        const ProfileScreen()), // Переход на экран профиля
+              );
+            }),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildNavItem(String iconPath, String label, VoidCallback onTap) {
     return InkWell(
@@ -340,7 +361,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   void _showAddTaskModal(BuildContext context) {
     TextEditingController taskController = TextEditingController();
@@ -576,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               backgroundColor:
-                  const Color.fromARGB(255, 55, 55, 55), // Светлый фон
+                  const Color.fromARGB(255, 55, 55, 55),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
