@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
-              backgroundImage: AssetImage("assets/image/avatar.png"),
+              backgroundImage: AssetImage("assets/image/avatar_icon_profile.png"),
             ),
           ),
         ],
