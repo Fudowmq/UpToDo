@@ -1,9 +1,12 @@
 import 'dart:async';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uptodo/screens/home/calendar_screen.dart';
 import 'package:uptodo/screens/home/home_screen.dart';
 import 'package:uptodo/screens/home/profile_screen.dart';
+import 'package:uptodo/widgets/add_task_widget.dart';
 
 class FocusScreen extends StatefulWidget {
   const FocusScreen({super.key});
@@ -17,16 +20,66 @@ class _FocusScreenState extends State<FocusScreen> {
   Timer? timer;
   int elapsedSeconds = 0;
   final int totalSeconds = 30 * 60;
-
+  DateTime? focusStartTime;
+  
   List<double> focusData = [0, 0, 0, 0, 0, 0, 0];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadWeeklyFocusData();
+  }
+
+  Future<void> _loadWeeklyFocusData() async {
+    try {
+      final now = DateTime.now();
+      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      
+      for (int i = 0; i < 7; i++) {
+        final date = startOfWeek.add(Duration(days: i));
+        final dateStr = "${date.year}-${date.month}-${date.day}";
+        
+        try {
+          final snapshot = await FirebaseFirestore.instance
+              .collection("focus_sessions")
+              .where("userId", isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .where("date", isEqualTo: dateStr)
+              .get();
+
+          double totalHours = 0;
+          for (var doc in snapshot.docs) {
+            totalHours += (doc["duration"] as num).toDouble() / 3600;
+          }
+          
+          setState(() {
+            focusData[i] = totalHours;
+          });
+        } catch (e) {
+          print('Error loading focus data for $dateStr: $e');
+          // В случае ошибки доступа оставляем значение 0 для этого дня
+        }
+      }
+    } catch (e) {
+      print('Error in _loadWeeklyFocusData: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось загрузить данные фокус-режима'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   void startFocus() {
+    focusStartTime = DateTime.now();
     if (elapsedSeconds == 0) {
       timer = Timer.periodic(const Duration(seconds: 1), (t) {
         if (elapsedSeconds < totalSeconds) {
           setState(() {
             elapsedSeconds++;
           });
+        } else {
+          stopFocus();
         }
       });
     }
@@ -35,9 +88,79 @@ class _FocusScreenState extends State<FocusScreen> {
     });
   }
 
-  void stopFocus() {
+  Future<void> stopFocus() async {
+    if (focusStartTime != null && isFocusing && FirebaseAuth.instance.currentUser != null) {
+      final duration = elapsedSeconds;
+      final now = DateTime.now();
+      final date = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      
+      try {
+        // Создаем данные для сохранения
+        final sessionData = {
+          "userId": FirebaseAuth.instance.currentUser!.uid,
+          "date": date,
+          "startTime": Timestamp.fromDate(focusStartTime!),
+          "endTime": Timestamp.fromDate(now),
+          "duration": duration,
+          "createdAt": FieldValue.serverTimestamp(),
+        };
+
+        // Пробуем сохранить данные
+        await FirebaseFirestore.instance
+            .collection("focus_sessions")
+            .add(sessionData)
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                throw TimeoutException('Превышено время ожидания при сохранении');
+              },
+            );
+
+        print('Focus session saved successfully: $sessionData');
+        
+        // Показываем уведомление об успехе
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Сохранено: ${duration ~/ 60} минут фокусировки'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Обновляем статистику
+        await _loadWeeklyFocusData();
+      } catch (e) {
+        print('Error saving focus session: $e');
+        String errorMessage = 'Не удалось сохранить сессию фокусировки';
+        
+        if (e is FirebaseException) {
+          switch (e.code) {
+            case 'permission-denied':
+              errorMessage = 'Нет прав доступа для сохранения данных';
+              break;
+            case 'unavailable':
+              errorMessage = 'Сервер недоступен. Проверьте подключение';
+              break;
+            default:
+              errorMessage = 'Ошибка Firebase: ${e.message}';
+          }
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+
+    timer?.cancel();
     setState(() {
       isFocusing = false;
+      elapsedSeconds = 0;
+      focusStartTime = null;
     });
   }
 
@@ -212,6 +335,8 @@ class _FocusScreenState extends State<FocusScreen> {
           ],
         ),
       ),
+      floatingActionButton: const AddTaskWidget(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
