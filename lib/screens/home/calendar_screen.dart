@@ -45,17 +45,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap) {
+  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap, bool isActive) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(iconPath, width: 24, height: 24),
-          const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(fontSize: 12, color: Colors.black)),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.blueAccent.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              color: isActive ? Colors.blueAccent : Colors.white70,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive ? Colors.blueAccent : Colors.white70,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -146,109 +164,136 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     var task = tasks[index];
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                    return Opacity(
+                      opacity: task.completed ? 0.5 : 1.0,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
+                        child: Dismissible(
+                          key: Key(task.id),
+                          direction: DismissDirection.startToEnd,
+                          onDismissed: (direction) {
+                            FirebaseFirestore.instance
+                                .collection("tasks")
+                                .doc(task.id)
+                                .delete();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text("Task '${task.title}' deleted")),
+                            );
+                          },
+                          background: Container(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            color: Colors.red,
+                            child: const Icon(Icons.delete, color: Colors.white),
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  FirebaseFirestore.instance
-                                      .collection("tasks")
-                                      .doc(task.id)
-                                      .update({"completed": !task.completed});
-                                },
-                                child: Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: task.completed ? Colors.blue : Colors.transparent,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: task.completed
-                                      ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                      : null,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 6,
+                                  offset: Offset(0, 2),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  task.title,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    decoration: task.completed
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (task.description.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              task.description,
-                              style: TextStyle(
-                                color: Colors.grey[300],
-                                fontSize: 14,
-                              ),
+                              ],
                             ),
-                          ],
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: _getCategoryColor(task.category),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  task.category,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[700]!),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.flag,
-                                        color: Colors.grey[400], size: 16),
-                                    const SizedBox(width: 5),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          FirebaseFirestore.instance
+                                              .collection("tasks")
+                                              .doc(task.id)
+                                              .update({"completed": !task.completed});
+                                        },
+                                        child: Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: task.completed ? Colors.blueAccent : Colors.transparent,
+                                            border: Border.all(
+                                                color: task.completed ? Colors.blueAccent : Colors.white, width: 2),
+                                          ),
+                                          child: task.completed
+                                              ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          task.title,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: task.completed ? Colors.grey[400] : Colors.white,
+                                            decoration: task.completed ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (task.description.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
                                     Text(
-                                      task.priority.toString(),
-                                      style: TextStyle(color: Colors.grey[400]),
+                                      task.description,
+                                      style: TextStyle(
+                                        color: task.completed ? Colors.grey[500] : Colors.grey[300],
+                                        fontSize: 14,
+                                        decoration: task.completed ? TextDecoration.lineThrough : null,
+                                      ),
                                     ),
                                   ],
-                                ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: _getCategoryColor(task.category),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          task.category,
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey[700]!),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.flag,
+                                                color: Colors.grey[400], size: 16),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              task.priority.toString(),
+                                              style: TextStyle(color: Colors.grey[400]),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
                     );
                   },
@@ -261,35 +306,43 @@ class _CalendarScreenState extends State<CalendarScreen> {
       floatingActionButton: const AddTaskWidget(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
+        color: Colors.grey[900],
         shape: const CircularNotchedRectangle(),
         notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem("assets/image/home_icon.png", "Home", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            }),
-            _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
-              // Остаёмся на текущем экране
-            }),
-            const SizedBox(width: 48),
-            _buildNavItem("assets/image/clock_icon.png", "Focus", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const FocusScreen()),
-              );
-            }),
-            _buildNavItem("assets/image/profile_icon.png", "Profile", () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
-            }),
-          ],
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem("assets/image/home_icon.png", "Home", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }, false),
+                _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
+                  // Остаёмся на текущем экране
+                }, true),
+                const SizedBox(width: 48),
+                _buildNavItem("assets/image/clock_icon.png", "Focus", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FocusScreen()),
+                  );
+                }, false),
+                _buildNavItem("assets/image/profile_icon.png", "Profile", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
+                }, false),
+              ],
+            ),
+          ),
         ),
       ),
     );

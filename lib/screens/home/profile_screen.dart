@@ -29,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     // Сразу устанавливаем имя из Auth, если оно есть
     if (_currentUser?.displayName != null && _currentUser!.displayName!.isNotEmpty) {
-      _userName = _currentUser!.displayName!;
+      _userName = _currentUser.displayName!;
     }
     _loadUserName();
     _loadTaskCounts();
@@ -40,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final querySnapshot = await _firestore
             .collection('tasks')
-            .where('userId', isEqualTo: _currentUser!.uid)
+            .where('userId', isEqualTo: _currentUser.uid)
             .where('type', isEqualTo: 'profile')
             .limit(1)
             .get();
@@ -65,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Получаем все задачи пользователя
         final querySnapshot = await _firestore
             .collection("tasks")
-            .where("userId", isEqualTo: _currentUser!.uid)
+            .where("userId", isEqualTo: _currentUser.uid)
             .get();
 
         int left = 0;
@@ -97,10 +97,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       print('Starting update process...');
-      print('User ID: ${_currentUser!.uid}');
+      print('User ID: ${_currentUser.uid}');
       
       // Сначала обновляем в Auth
-      await _currentUser!.updateDisplayName(newName);
+      await _currentUser.updateDisplayName(newName);
       print('Auth display name updated successfully');
 
       // Обновляем локальное состояние
@@ -112,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Ищем существующий профиль в коллекции tasks
       final querySnapshot = await _firestore
           .collection('tasks')
-          .where('userId', isEqualTo: _currentUser!.uid)
+          .where('userId', isEqualTo: _currentUser.uid)
           .where('type', isEqualTo: 'profile')
           .limit(1)
           .get();
@@ -120,10 +120,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (querySnapshot.docs.isEmpty) {
         // Если профиль не существует, создаем новый
         await _firestore.collection('tasks').add({
-          'userId': _currentUser!.uid,
+          'userId': _currentUser.uid,
           'type': 'profile',
           'name': newName,
-          'email': _currentUser!.email,
+          'email': _currentUser.email,
           'createdAt': FieldValue.serverTimestamp(),
         });
         print('Created new profile document');
@@ -141,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Показываем сообщение об успехе
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Имя успешно обновлено'),
+          content: Text('Name updated successfully'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -164,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
       
-      throw e;
+      rethrow;
     }
   }
 
@@ -331,17 +331,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap) {
+  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap, bool isActive) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(iconPath, width: 24, height: 24),
-          const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(fontSize: 12, color: Colors.black)),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.blueAccent.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              color: isActive ? Colors.blueAccent : Colors.white70,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive ? Colors.blueAccent : Colors.white70,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -690,34 +708,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem("assets/image/home_icon.png", "Home", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()));
-            }),
-            _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const CalendarScreen()));
-            }),
-            const SizedBox(width: 48),
-            _buildNavItem("assets/image/clock_icon.png", "Focus", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const FocusScreen()));
-            }),
-            _buildNavItem("assets/image/profile_icon.png", "Profile", () {
-              // Остаёмся на текущем экране
-            }),
-          ],
-        ),
-      ),
       floatingActionButton: const AddTaskWidget(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.grey[900],
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6.0,
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem("assets/image/home_icon.png", "Home", () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()));
+                }, false),
+                _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const CalendarScreen()));
+                }, false),
+                const SizedBox(width: 48),
+                _buildNavItem("assets/image/clock_icon.png", "Focus", () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const FocusScreen()));
+                }, false),
+                _buildNavItem("assets/image/profile_icon.png", "Profile", () {
+                  // Остаёмся на текущем экране
+                }, true),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

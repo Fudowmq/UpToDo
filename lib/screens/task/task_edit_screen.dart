@@ -67,14 +67,17 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Center(
             child: Text(
-              "Select Category",
+              "Выберите категорию",
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           content: SizedBox(
@@ -108,7 +111,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       const SizedBox(height: 5),
                       Text(
                         _categories[index]["name"],
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -119,7 +125,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Close", style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Закрыть",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -155,8 +164,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     const Divider(color: Colors.white24),
                     GridView.builder(
                       shrinkWrap: true,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,

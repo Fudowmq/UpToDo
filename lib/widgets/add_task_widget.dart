@@ -14,6 +14,8 @@ class _AddTaskWidgetState extends State<AddTaskWidget> {
   String? _selectedCategory;
   DateTime? selectedDateTime;
   bool hasTime = false;
+  final TextEditingController taskController = TextEditingController();
+  final TextEditingController descController = TextEditingController();
 
   final List<Map<String, dynamic>> _categories = [
     {
@@ -36,11 +38,10 @@ class _AddTaskWidgetState extends State<AddTaskWidget> {
     {"name": "Home", "icon": Icons.home, "color": Colors.amberAccent},
     {"name": "Create New", "icon": Icons.add, "color": Colors.white70},
   ];
+  
+  get addTask => null;
 
   void _showAddTaskModal(BuildContext context) {
-    TextEditingController taskController = TextEditingController();
-    TextEditingController descController = TextEditingController();
-
     void pickDateTime(BuildContext context) async {
       DateTime? pickedDate = await showDatePicker(
         context: context,
@@ -178,66 +179,151 @@ class _AddTaskWidgetState extends State<AddTaskWidget> {
                 children: [
                   const Text(
                     "Add Task",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: taskController,
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: "Task Name",
+                      hintStyle: TextStyle(color: Colors.grey[400]),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: descController,
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: "Description",
+                      hintStyle: TextStyle(color: Colors.grey[400]),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 0),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.timer),
-                              onPressed: () => pickDateTime(context),
-                            ),
-                            selectedDateTime != null
-                                ? Text(
-                                    hasTime
-                                        ? '${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}'
-                                        : '${selectedDateTime!.day.toString().padLeft(2, '0')}.${selectedDateTime!.month.toString().padLeft(2, '0')}.${selectedDateTime!.year}',
-                                    style: const TextStyle(color: Colors.grey),
-                                  )
-                                : const SizedBox(),
-                            IconButton(
-                              icon: const Icon(Icons.label),
-                              onPressed: () {
-                                _showCategoryDialog(context);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.flag),
-                              onPressed: () {
-                                _showPriorityDialog(context);
-                              },
-                            ),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.timer, color: Colors.white),
+                            onPressed: () async {
+                              DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2030),
+                              );
+
+                              if (pickedDate != null) {
+                                final bool? useTimeAlso = await showDialog<bool>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      backgroundColor: Colors.grey[900],
+                                      title: const Text(
+                                        'Add Time?',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      content: const Text(
+                                        'Do you want to add specific time for this task?',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text(
+                                            'Date Only',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                          ),
+                                          child: const Text('Add Time'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+
+                                if (useTimeAlso == true) {
+                                  TimeOfDay? pickedTime = await showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay.now(),
+                                    builder: (BuildContext context, Widget? child) {
+                                      return MediaQuery(
+                                        data: MediaQuery.of(context).copyWith(
+                                          alwaysUse24HourFormat: true,
+                                        ),
+                                        child: Theme(
+                                          data: Theme.of(context).copyWith(
+                                            timePickerTheme: TimePickerThemeData(
+                                              hourMinuteShape: const CircleBorder(),
+                                            ),
+                                          ),
+                                          child: child!,
+                                        ),
+                                      );
+                                    },
+                                  );
+
+                                  if (pickedTime != null) {
+                                    setState(() {
+                                      selectedDateTime = DateTime(
+                                        pickedDate.year,
+                                        pickedDate.month,
+                                        pickedDate.day,
+                                        pickedTime.hour,
+                                        pickedTime.minute,
+                                      );
+                                      hasTime = true;
+                                    });
+                                  }
+                                } else {
+                                  setState(() {
+                                    selectedDateTime = DateTime(
+                                      pickedDate.year,
+                                      pickedDate.month,
+                                      pickedDate.day,
+                                    );
+                                    hasTime = false;
+                                  });
+                                }
+                              }
+                            },
+                          ),
+                          selectedDateTime != null
+                              ? Text(
+                                  hasTime
+                                      ? '${selectedDateTime!.hour.toString().padLeft(2, '0')}:${selectedDateTime!.minute.toString().padLeft(2, '0')}'
+                                      : '${selectedDateTime!.day.toString().padLeft(2, '0')}.${selectedDateTime!.month.toString().padLeft(2, '0')}.${selectedDateTime!.year}',
+                                  style: const TextStyle(color: Colors.grey),
+                                )
+                              : const SizedBox(),
+                          IconButton(
+                            icon: const Icon(Icons.label, color: Colors.white),
+                            onPressed: () {
+                              _showCategoryDialog(context);
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.flag, color: Colors.white),
+                            onPressed: () {
+                              _showPriorityDialog(context);
+                            },
+                          ),
+                        ],
                       ),
                       IconButton(
                         icon: const Icon(Icons.send, color: Colors.blue),

@@ -174,17 +174,35 @@ class _FocusScreenState extends State<FocusScreen> {
     return elapsedSeconds >= (totalSeconds * 0.5) ? Colors.black : Colors.grey;
   }
 
-  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap) {
+  Widget _buildNavItem(String iconPath, String label, VoidCallback onTap, bool isActive) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset(iconPath, width: 24, height: 24),
-          const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(fontSize: 12, color: Colors.black)),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.blueAccent.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 24,
+              height: 24,
+              color: isActive ? Colors.blueAccent : Colors.white70,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isActive ? Colors.blueAccent : Colors.white70,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -309,34 +327,48 @@ class _FocusScreenState extends State<FocusScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem("assets/image/home_icon.png", "Home", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()));
-            }),
-            _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const CalendarScreen()));
-            }),
-            const SizedBox(width: 48),
-            _buildNavItem("assets/image/clock_icon.png", "Focus", () {
-              // Остаёмся на текущем экране
-            }),
-            _buildNavItem("assets/image/profile_icon.png", "Profile", () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()));
-            }),
-          ],
-        ),
-      ),
       floatingActionButton: const AddTaskWidget(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.grey[900],
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6.0,
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem("assets/image/home_icon.png", "Home", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                }, false),
+                _buildNavItem("assets/image/calendar_icon.png", "Calendar", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CalendarScreen()),
+                  );
+                }, false),
+                const SizedBox(width: 48),
+                _buildNavItem("assets/image/clock_icon.png", "Focus", () {
+                  // Остаёмся на текущем экране
+                }, true),
+                _buildNavItem("assets/image/profile_icon.png", "Profile", () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
+                }, false),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
