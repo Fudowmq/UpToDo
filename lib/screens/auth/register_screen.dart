@@ -67,68 +67,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            const Text(
-              'Регистрация',
-              style: TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 30),
-            _buildTextField("Email", _emailController, false),
-            const SizedBox(height: 20),
-            _buildTextField("Password", _passwordController, true),
-            const SizedBox(height: 20),
-            _buildTextField("Repeat password", _confirmPasswordController, true),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _register,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent[400],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text("Register", style: TextStyle(color: Colors.white, fontSize: 16)),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                'Register',
+                style: TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 30),
-            Row(
-              children: [
-                Expanded(child: Divider(color: Colors.grey[700])),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text("or", style: TextStyle(color: Colors.black)),
+              const SizedBox(height: 30),
+              _buildTextField("Email", _emailController, false),
+              const SizedBox(height: 20),
+              _buildTextField("Password", _passwordController, true),
+              const SizedBox(height: 20),
+              _buildTextField("Repeat password", _confirmPasswordController, true),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _register,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent[400],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text("Register", style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
-                Expanded(child: Divider(color: Colors.grey[700])),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Прочие социальные кнопки
-            _buildSocialButton("Login with Google", "assets/image/google.png", () {}),
-            const SizedBox(height: 10),
-            _buildSocialButton("Login with Apple", "assets/image/apple.png", () {}),
-            const Spacer(),
-            Center(
-              child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                ),
-                child: const Text("Already have an account? Login", style: TextStyle(color: Colors.grey)),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey[700])),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text("or", style: TextStyle(color: Colors.black)),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey[700])),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildSocialButton("Login with Google", "assets/image/google.png", () {}),
+              const SizedBox(height: 10),
+              _buildSocialButton("Login with Apple", "assets/image/apple.png", () {}),
+              const SizedBox(height: 15),
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                  child: const Text(
+                    "Already have an account? Login",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

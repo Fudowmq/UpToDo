@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class TaskEditScreen extends StatefulWidget {
   final String taskId;
@@ -21,6 +22,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   DateTime? _selectedDateTime;
   String? _selectedCategory;
   int? _selectedPriority;
+  Timer? _debounce;
+  bool _isEditingTitle = false;
+  bool _isEditingDescription = false;
 
   final List<Map<String, dynamic>> _categories = [
     {
@@ -52,13 +56,95 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     _selectedDateTime = (widget.taskData['time'] as Timestamp?)?.toDate();
     _selectedCategory = widget.taskData['category'];
     _selectedPriority = widget.taskData['priority'];
+    _isEditingTitle = false;
+    _isEditingDescription = false;
+
+    _titleController.addListener(_onTextChanged);
+    _descriptionController.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(_onTextChanged);
+    _descriptionController.removeListener(_onTextChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _showDateTimePicker() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDateTime ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+
+    if (pickedDate != null) {
+      final bool? useTimeAlso = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text(
+              'Add Time?',
+              style: TextStyle(color: Colors.black),
+            ),
+            content: const Text(
+              'Do you want to add specific time for this task?',
+              style: TextStyle(color: Colors.black87),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  'Date Only',
+                  style: TextStyle(color: Colors.black87),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                ),
+                child: const Text('Add Time'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (useTimeAlso == true) {
+        final TimeOfDay? pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(_selectedDateTime ?? DateTime.now()),
+        );
+
+        if (pickedTime != null) {
+          setState(() {
+            _selectedDateTime = DateTime(
+              pickedDate.year,
+              pickedDate.month,
+              pickedDate.day,
+              pickedTime.hour,
+              pickedTime.minute,
+            );
+            widget.taskData['hasTime'] = true;
+          });
+        }
+      } else {
+        setState(() {
+          _selectedDateTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+          );
+          widget.taskData['hasTime'] = false;
+        });
+      }
+      
+      _saveChanges();
+    }
   }
 
   void _showCategoryDialog(BuildContext context) {
@@ -66,17 +152,17 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.grey[900],
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           title: const Center(
             child: Text(
-              "Выберите категорию",
+              "Choose Category",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
           ),
@@ -93,6 +179,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                       _selectedCategory = _categories[index]["name"];
                     });
                     Navigator.pop(context);
+                    _saveChanges();
                   },
                   child: Column(
                     children: [
@@ -259,6 +346,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   Future<void> _updateTask() async {
     try {
+      if (_titleController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task name cannot be empty')),
+        );
+        return;
+      }
+
       await FirebaseFirestore.instance
           .collection('tasks')
           .doc(widget.taskId)
@@ -266,15 +360,19 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         'title': _titleController.text,
         'description': _descriptionController.text,
         'time': _selectedDateTime != null ? Timestamp.fromDate(_selectedDateTime!) : null,
-        'category': _selectedCategory,
-        'priority': _selectedPriority,
+        'category': _selectedCategory ?? 'Without a category',
+        'priority': _selectedPriority ?? 0,
+        'lastModified': Timestamp.now(),
       });
       
-      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Task updated successfully')),
+      );
+      
       Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error updating task')),
+        SnackBar(content: Text('Error updating task: $e')),
       );
     }
   }
@@ -295,97 +393,286 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
+  // Функция для автоматического сохранения изменений
+  Future<void> _saveChanges() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(widget.taskId)
+          .update({
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'time': _selectedDateTime != null ? Timestamp.fromDate(_selectedDateTime!) : null,
+        'hasTime': widget.taskData['hasTime'],
+        'category': _selectedCategory ?? 'Without a category',
+        'priority': _selectedPriority ?? 0,
+        'lastModified': Timestamp.now(),
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving changes: $e')),
+      );
+    }
+  }
+
+  // Debounce для автосохранения при вводе текста
+  void _onTextChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _saveChanges();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () {
-              // Включить режим редактирования
-            },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 60,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 24,
-                  height: 24,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                bool currentStatus = widget.taskData['completed'] ?? false;
+                                widget.taskData['completed'] = !currentStatus;
+                                FirebaseFirestore.instance
+                                    .collection('tasks')
+                                    .doc(widget.taskId)
+                                    .update({'completed': !currentStatus});
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: widget.taskData['completed'] == true ? Colors.blue : Colors.transparent,
+                                border: Border.all(
+                                  color: widget.taskData['completed'] == true ? Colors.blue : Colors.grey[400]!,
+                                  width: 2
+                                ),
+                              ),
+                              child: widget.taskData['completed'] == true
+                                  ? const Icon(Icons.check, size: 18, color: Colors.white)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: !_isEditingTitle
+                                ? Text(
+                                    _titleController.text,
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: widget.taskData['completed'] == true
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      decorationColor: Colors.grey[400],
+                                    ),
+                                  )
+                                : TextField(
+                                    controller: _titleController,
+                                    autofocus: true,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      hintText: "Task Name",
+                                      hintStyle: TextStyle(color: Colors.grey),
+                                    ),
+                                    onSubmitted: (value) {
+                                      setState(() {
+                                        _isEditingTitle = false;
+                                        _saveChanges();
+                                      });
+                                    },
+                                  ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.edit,
+                              color: Colors.grey[600],
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isEditingTitle = true;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isEditingDescription = true;
+                          });
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: !_isEditingDescription
+                              ? Text(
+                                  _descriptionController.text.isEmpty 
+                                      ? "Add description" 
+                                      : _descriptionController.text,
+                                  style: TextStyle(
+                                    color: _descriptionController.text.isEmpty 
+                                        ? Colors.grey[500]
+                                        : Colors.grey[700],
+                                    fontSize: 16,
+                                  ),
+                                )
+                              : TextField(
+                                  controller: _descriptionController,
+                                  autofocus: true,
+                                  maxLines: null,
+                                  style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontSize: 16,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: "Add description",
+                                    hintStyle: TextStyle(color: Colors.grey),
+                                  ),
+                                  onSubmitted: (value) {
+                                    setState(() {
+                                      _isEditingDescription = false;
+                                      _saveChanges();
+                                    });
+                                  },
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _titleController.text,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildOptionTile(
+                        icon: Icons.access_time_rounded,
+                        title: 'Task Time',
+                        value: _selectedDateTime != null 
+                          ? widget.taskData['hasTime'] == true
+                              ? 'Today at ${_selectedDateTime!.hour.toString().padLeft(2, '0')}:${_selectedDateTime!.minute.toString().padLeft(2, '0')}'
+                              : '${_selectedDateTime!.day.toString().padLeft(2, '0')}.${_selectedDateTime!.month.toString().padLeft(2, '0')}.${_selectedDateTime!.year}'
+                          : 'Not set',
+                        onTap: () => _showDateTimePicker(),
+                      ),
+                      Divider(color: Colors.grey[200], height: 1),
+                      _buildOptionTile(
+                        icon: Icons.category_rounded,
+                        title: 'Task Category',
+                        value: _selectedCategory ?? 'Without a category',
+                        onTap: () => _showCategoryDialog(context),
+                      ),
+                      Divider(color: Colors.grey[200], height: 1),
+                      _buildOptionTile(
+                        icon: Icons.flag_rounded,
+                        title: 'Task Priority',
+                        value: _selectedPriority?.toString() ?? '0',
+                        onTap: () => _showPriorityDialog(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+                TextButton.icon(
+                  onPressed: () async {
+                    bool? confirm = await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete Task?'),
+                        content: const Text('This action cannot be undone.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      _deleteTask();
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text(
+                    'Delete Task',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _updateTask,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Edit Task',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.white70),
-                  onPressed: () {
-                    // Редактировать заголовок
-                  },
-                ),
               ],
             ),
-            if (_descriptionController.text.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(left: 36, top: 8),
-                child: Text(
-                  _descriptionController.text,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ),
-            const SizedBox(height: 24),
-            _buildOptionTile(
-              icon: Icons.access_time,
-              title: 'Task Time:',
-              value: _selectedDateTime != null 
-                ? widget.taskData['hasTime'] == true
-                    ? 'Today at ${_selectedDateTime!.hour.toString().padLeft(2, '0')}:${_selectedDateTime!.minute.toString().padLeft(2, '0')}'
-                    : '${_selectedDateTime!.day.toString().padLeft(2, '0')}.${_selectedDateTime!.month.toString().padLeft(2, '0')}.${_selectedDateTime!.year}'
-                : 'Not set',
-            ),
-            _buildOptionTile(
-              icon: Icons.category,
-              title: 'Category:',
-              value: _selectedCategory ?? 'No category',
-            ),
-            _buildOptionTile(
-              icon: Icons.flag,
-              title: 'Priority:',
-              value: _selectedPriority?.toString() ?? 'Default',
-            ),
-            _buildOptionTile(
-              icon: Icons.subtitles,
-              title: 'Subtask',
-              value: 'Add subtask',
-            ),
-            const Spacer(),
-            _buildDeleteButton(),
-            const SizedBox(height: 16),
-            _buildEditButton(),
-          ],
+          ),
         ),
       ),
     );
@@ -397,77 +684,42 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     required String value,
     VoidCallback? onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white70, size: 20),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white70),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  value,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeleteButton() {
     return InkWell(
-      onTap: _deleteTask,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: const Row(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
           children: [
-            Icon(Icons.delete_outline, color: Colors.red),
-            SizedBox(width: 16),
+            Icon(
+              icon,
+              color: Colors.grey[700],
+              size: 22,
+            ),
+            const SizedBox(width: 12),
             Text(
-              'Delete Task',
-              style: TextStyle(color: Colors.red),
+              title,
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: 16,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEditButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _updateTask,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[700],
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: const Text(
-          'Edit Task',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
     );

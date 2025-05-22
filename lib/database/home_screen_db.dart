@@ -35,7 +35,7 @@ class HomeScreenDB extends StatelessWidget {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               var task = tasks[index];
-              var category = task["category"] ?? "Без категории";
+              var category = task["category"] ?? "Without a category";
 
               return ListTile(
                 leading: Icon(Icons.category, color: Colors.white),
@@ -52,7 +52,7 @@ class HomeScreenDB extends StatelessWidget {
                       style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                     ),
                     Text("Приоритет: ${task["priority"]}"),
-                    Text("Категория: ${task["category"] ?? "Без категории"}",
+                    Text("Категория: ${task["category"] ?? "Without a category"}",
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.blueAccent)),
@@ -125,7 +125,7 @@ class HomeScreenDB extends StatelessWidget {
     TextEditingController descController = TextEditingController();
     TextEditingController priorityController = TextEditingController();
     DateTime selectedTime = DateTime.now();
-    String selectedCategory = "Без категории";
+    String selectedCategory = "Without a category";
 
     showModalBottomSheet(
       context: context,
@@ -240,7 +240,7 @@ class HomeScreenDB extends StatelessWidget {
 
   Future<String> _showCategoryDialog(BuildContext context) async {
     List<String> categories = ["Работа", "Личное", "Учеба", "Спорт", "Другое"];
-    String selectedCategory = "Без категории";
+    String selectedCategory = "Without a category";
 
     return await showDialog<String>(
           context: context,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:uptodo/screens/home/calendar_screen.dart';
 import 'package:uptodo/screens/home/focus_screen.dart';
 import 'package:uptodo/screens/home/profile_screen.dart';
+import 'package:uptodo/screens/task/task_edit_screen.dart';
 import 'package:uptodo/widgets/add_task_widget.dart';
 
 enum TaskFilter { today, tomorrow, week }
@@ -17,8 +18,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TaskFilter _selectedFilter = TaskFilter.today;
-  int _selectedIndex = 0;
-  final List<String> _labels = ["Home", "Calendar", "Focus", "Profile"];
 
   DateTime get _startDate {
     final now = DateTime.now();
@@ -63,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onNavTap(int index) {
     setState(() {
-      _selectedIndex = index;
     });
     if (index == 1) {
       Navigator.push(
@@ -295,132 +293,162 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ],
                                 ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              FirebaseFirestore.instance
-                                                  .collection("tasks")
-                                                  .doc(task.id)
-                                                  .update({"completed": !(task["completed"] ?? false)});
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => TaskEditScreen(
+                                            taskId: task.id,
+                                            taskData: {
+                                              'title': task['title'],
+                                              'description': task['description'] ?? '',
+                                              'time': task['time'],
+                                              'hasTime': task['hasTime'] ?? false,
+                                              'category': task['category'],
+                                              'priority': task['priority'],
                                             },
-                                            child: Container(
-                                              width: 20,
-                                              height: 20,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: task["completed"] == true ? Colors.blueAccent : Colors.transparent,
-                                                border: Border.all(
-                                                    color: task["completed"] == true ? Colors.blueAccent : Colors.white, width: 2),
-                                              ),
-                                              child: task["completed"] == true
-                                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                                  : null,
-                                            ),
                                           ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              task["title"],
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: task["completed"] == true ? Colors.grey[400] : Colors.white,
-                                                decoration: task["completed"] == true ? TextDecoration.lineThrough : null,
-                                                shadows: task["completed"] == true
-                                                    ? [Shadow(color: Colors.black26, blurRadius: 2)]
-                                                    : null,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(
-                                        task["time"] != null
-                                            ? formatDateTime(
-                                                task["time"].toDate().toLocal(), context)
-                                            : "No time set",
-                                        style: TextStyle(
-                                            fontSize: 14, color: Colors.grey[400]),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        ),
+                                      );
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 5),
-                                            decoration: BoxDecoration(
-                                              color: task["category"] == "Music"
-                                                  ? Colors.purpleAccent
-                                                  : task["category"] == "Movie"
-                                                      ? Colors.lightBlueAccent
-                                                      : task["category"] == "Work"
-                                                          ? Colors.orangeAccent
-                                                          : task["category"] == "Sport"
-                                                              ? Colors.lightGreenAccent
-                                                              : task["category"] == "Design"
-                                                                  ? Colors.cyanAccent
-                                                                  : task["category"] ==
-                                                                          "University"
-                                                                      ? Colors.blueAccent
-                                                                      : task["category"] ==
-                                                                              "Social"
-                                                                          ? Colors
-                                                                              .pinkAccent
-                                                                          : task["category"] ==
-                                                                                  "Health"
-                                                                              ? Colors
-                                                                                  .tealAccent
-                                                                              : task["category"] ==
-                                                                                      "Home"
-                                                                                  ? Colors
-                                                                                      .amberAccent
-                                                                                  : task["category"] ==
-                                                                                          "Grocery"
-                                                                                      ? Colors
-                                                                                          .greenAccent
-                                                                                      : Colors
-                                                                                          .grey,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.school,
-                                                    color: Colors.white, size: 16),
-                                                const SizedBox(width: 5),
-                                                Text(task["category"] ?? "No category",
-                                                    style: TextStyle(color: Colors.white)),
-                                              ],
-                                            ),
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  FirebaseFirestore.instance
+                                                      .collection("tasks")
+                                                      .doc(task.id)
+                                                      .update({"completed": !(task["completed"] ?? false)});
+                                                },
+                                                child: Container(
+                                                  width: 20,
+                                                  height: 20,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: task["completed"] == true ? Colors.blueAccent : Colors.transparent,
+                                                    border: Border.all(
+                                                        color: task["completed"] == true ? Colors.blueAccent : Colors.white, width: 2),
+                                                  ),
+                                                  child: task["completed"] == true
+                                                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                                      : null,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  task["title"],
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: task["completed"] == true ? Colors.grey[400] : Colors.white,
+                                                    decoration: task["completed"] == true ? TextDecoration.lineThrough : null,
+                                                    shadows: task["completed"] == true
+                                                        ? [Shadow(color: Colors.black26, blurRadius: 2)]
+                                                        : null,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 10, vertical: 5),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: Colors.grey[700]!),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.flag,
-                                                    color: Colors.grey[400], size: 16),
-                                                const SizedBox(width: 5),
-                                                Text("${task["priority"]}",
-                                                    style:
-                                                        TextStyle(color: Colors.grey[400])),
-                                              ],
-                                            ),
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            task["time"] != null
+                                                ? formatDateTime(
+                                                    task["time"].toDate().toLocal(), context)
+                                                : "No time set",
+                                            style: TextStyle(
+                                                fontSize: 14, color: Colors.grey[400]),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 10, vertical: 5),
+                                                decoration: BoxDecoration(
+                                                  color: task["category"] == "Music"
+                                                      ? Colors.purpleAccent
+                                                      : task["category"] == "Movie"
+                                                          ? Colors.lightBlueAccent
+                                                          : task["category"] == "Work"
+                                                              ? Colors.orangeAccent
+                                                              : task["category"] == "Sport"
+                                                                  ? Colors.lightGreenAccent
+                                                                  : task["category"] == "Design"
+                                                                      ? Colors.cyanAccent
+                                                                      : task["category"] ==
+                                                                              "University"
+                                                                          ? Colors.blueAccent
+                                                                          : task["category"] ==
+                                                                                  "Social"
+                                                                              ? Colors
+                                                                                  .pinkAccent
+                                                                              : task["category"] ==
+                                                                                      "Health"
+                                                                                  ? Colors
+                                                                                      .tealAccent
+                                                                                  : task["category"] ==
+                                                                                          "Home"
+                                                                                      ? Colors
+                                                                                          .amberAccent
+                                                                                      : task["category"] ==
+                                                                                              "Grocery"
+                                                                                          ? Colors
+                                                                                              .greenAccent
+                                                                                          : Colors
+                                                                                              .grey,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.school,
+                                                        color: Colors.white, size: 16),
+                                                    const SizedBox(width: 5),
+                                                    Text(task["category"] ?? "Without a category",
+                                                        style: TextStyle(color: Colors.white)),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: 10, vertical: 5),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: Colors.grey[700]!),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      task["priority"] != null ? Icons.flag : Icons.flag_outlined,
+                                                      color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
+                                                      size: 16
+                                                    ),
+                                                    const SizedBox(width: 5),
+                                                    Text(
+                                                      task["priority"] != null ? "${task["priority"]}" : "•••",
+                                                      style: TextStyle(
+                                                        color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
+                                                        fontWeight: task["priority"] != null ? FontWeight.w500 : FontWeight.normal,
+                                                      )
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -487,6 +515,9 @@ class _HomeScreenState extends State<HomeScreen> {
     DateTime tomorrow = today.add(const Duration(days: 1));
     DateTime taskDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
 
+    // Проверяем, является ли время 00:00
+    bool isDefaultTime = dateTime.hour == 0 && dateTime.minute == 0;
+
     String dateString;
     if (taskDate == today) {
       dateString = "Today";
@@ -496,11 +527,15 @@ class _HomeScreenState extends State<HomeScreen> {
       dateString = "${dateTime.day.toString().padLeft(2, '0')}.${dateTime.month.toString().padLeft(2, '0')}.${dateTime.year}";
     }
 
+    // Если время 00:00 (задача без времени), возвращаем только дату
+    if (isDefaultTime) {
+      return dateString;
+    }
+
+    // Для задач с установленным временем показываем время
     String hour = dateTime.hour.toString().padLeft(2, '0');
     String minute = dateTime.minute.toString().padLeft(2, '0');
-    String timeString = "$hour:$minute";
-    
-    return "$dateString at $timeString";
+    return "$dateString · $hour:$minute";
   }
 
   Color _categoryColor(String? category) {
@@ -558,19 +593,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Color _priorityColor(dynamic priority) {
-    switch (priority) {
-      case 1:
-        return Colors.greenAccent;
-      case 2:
-        return Colors.lightBlueAccent;
-      case 3:
-        return Colors.amberAccent;
-      case 4:
-        return Colors.orangeAccent;
-      case 5:
-        return Colors.redAccent;
-      default:
-        return Colors.grey;
+    if (priority == null) return Colors.grey;
+    
+    int priorityNum = int.tryParse(priority.toString()) ?? 0;
+    
+    if (priorityNum >= 8) {
+      return Colors.greenAccent ; // Высокий приоритет (8-10) - красный
+    } else if (priorityNum >= 4) {
+      return Colors.amberAccent; // Средний приоритет (4-7) - желтый
+    } else {
+      return Colors.redAccent; // Низкий приоритет (1-3) - зеленый
     }
   }
 

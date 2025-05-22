@@ -148,7 +148,7 @@ class _AddTaskWidgetState extends State<AddTaskWidget> {
           "hasTime": hasTime,
           "priority": _selectedPriority,
           "completed": false,
-          "category": _selectedCategory ?? "Без категории",
+          "category": _selectedCategory ?? "Without a category",
           "userId": FirebaseAuth.instance.currentUser?.uid,
         });
         Navigator.pop(context);
