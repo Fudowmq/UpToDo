@@ -14,11 +14,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  bool _rememberMe = false;
 
   Future<void> _login() async {
     String? errorMessage = await _authService.loginUser(
       _emailController.text.trim(),
       _passwordController.text.trim(),
+      rememberMe: _rememberMe,
     );
 
     if (errorMessage == null) {
@@ -63,98 +65,142 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 20),
-              const Text(
-                'Login',
-                style: TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 55),
-              _buildTextField("Username", _emailController, false),
-              const SizedBox(height: 20),
-              _buildTextField("Password", _passwordController, true),
-              const SizedBox(height: 55),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent[400],
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 15),
+                const Text(
+                  'Login',
+                  style: TextStyle(
+                    color: Colors.black, 
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold
                   ),
-                  child: const Text("Login", style: TextStyle(color: Colors.black, fontSize: 16)),
                 ),
-              ),
-              const SizedBox(height: 30),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.grey[700])),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text("or", style: TextStyle(color: Colors.black)),
-                  ),
-                  Expanded(child: Divider(color: Colors.grey[700])),
-                ],
-              ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blueAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
+                const SizedBox(height: 35),
+                _buildTextField("Username", _emailController, false),
+                const SizedBox(height: 15),
+                _buildTextField("Password", _passwordController, true),
+                const SizedBox(height: 5),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset("assets/image/google.png", height: 20),
-                      const SizedBox(width: 10),
-                      const Text("Login with Google", style: TextStyle(color: Colors.black)),
+                      SizedBox(
+                        height: 26,
+                        width: 26,
+                        child: Transform.scale(
+                          scale: 1.0,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _rememberMe = value ?? false;
+                              });
+                            },
+                            activeColor: Colors.blueAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Remember me',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blueAccent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset("assets/image/apple.png", height: 20),
-                      const SizedBox(width: 10),
-                      const Text("Login with Apple", style: TextStyle(color: Colors.black)),
-                    ],
+                const SizedBox(height: 25),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent[400],
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text("Login", style: TextStyle(color: Colors.black, fontSize: 16)),
                   ),
                 ),
-              ),
-              const SizedBox(height: 50),
-              Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                    );
-                  },
-                  child: const Text("Don't have an account? Register", style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey[700])),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text("or", style: TextStyle(color: Colors.black54, fontSize: 14)),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey[700])),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.blueAccent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset("assets/image/google.png", height: 20),
+                        const SizedBox(width: 10),
+                        const Text("Login with Google", style: TextStyle(color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.blueAccent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset("assets/image/apple.png", height: 20),
+                        const SizedBox(width: 10),
+                        const Text("Login with Apple", style: TextStyle(color: Colors.black)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                      );
+                    },
+                    child: const Text("Don't have an account? Register", style: TextStyle(color: Colors.grey)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

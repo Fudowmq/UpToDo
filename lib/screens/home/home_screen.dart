@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:uptodo/screens/home/calendar_screen.dart';
 import 'package:uptodo/screens/home/focus_screen.dart';
 import 'package:uptodo/screens/home/profile_screen.dart';
@@ -18,6 +19,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TaskFilter _selectedFilter = TaskFilter.today;
+  String? _profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      try {
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('tasks')
+            .where('userId', isEqualTo: currentUser.uid)
+            .where('type', isEqualTo: 'profile')
+            .limit(1)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty && querySnapshot.docs.first.data()['imageUrl'] != null) {
+          setState(() {
+            _profileImageUrl = querySnapshot.docs.first.data()['imageUrl'] as String;
+          });
+        }
+      } catch (e) {
+        print('Error loading profile image: $e');
+      }
+    }
+  }
 
   DateTime get _startDate {
     final now = DateTime.now();
@@ -102,21 +132,54 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 14.0),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.10),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('tasks')
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('type', isEqualTo: 'profile')
+                  .limit(1)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                String? imageBase64;
+                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                  final profileData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                  imageBase64 = profileData['imageBase64'] as String?;
+                }
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.10),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Hero(
+                      tag: 'profileImage',
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage: imageBase64 != null
+                            ? MemoryImage(base64Decode(imageBase64))
+                            : const AssetImage("assets/image/avatar_icon_profile.png") as ImageProvider,
+                        child: imageBase64 == null
+                            ? Icon(Icons.person, size: 18, color: Colors.grey[400])
+                            : null,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundImage: AssetImage("assets/image/avatar_icon_profile.png"),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -314,139 +377,139 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       );
                                     },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Row(
-                                            children: [
-                                              GestureDetector(
-                                                onTap: () {
-                                                  FirebaseFirestore.instance
-                                                      .collection("tasks")
-                                                      .doc(task.id)
-                                                      .update({"completed": !(task["completed"] ?? false)});
-                                                },
-                                                child: Container(
-                                                  width: 20,
-                                                  height: 20,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: task["completed"] == true ? Colors.blueAccent : Colors.transparent,
-                                                    border: Border.all(
-                                                        color: task["completed"] == true ? Colors.blueAccent : Colors.white, width: 2),
-                                                  ),
-                                                  child: task["completed"] == true
-                                                      ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                                      : null,
-                                                ),
+                                          GestureDetector(
+                                            onTap: () {
+                                              FirebaseFirestore.instance
+                                                  .collection("tasks")
+                                                  .doc(task.id)
+                                                  .update({"completed": !(task["completed"] ?? false)});
+                                            },
+                                            child: Container(
+                                              width: 20,
+                                              height: 20,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: task["completed"] == true ? Colors.blueAccent : Colors.transparent,
+                                                border: Border.all(
+                                                    color: task["completed"] == true ? Colors.blueAccent : Colors.white, width: 2),
                                               ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  task["title"],
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: task["completed"] == true ? Colors.grey[400] : Colors.white,
-                                                    decoration: task["completed"] == true ? TextDecoration.lineThrough : null,
-                                                    shadows: task["completed"] == true
-                                                        ? [Shadow(color: Colors.black26, blurRadius: 2)]
-                                                        : null,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                              child: task["completed"] == true
+                                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                                  : null,
+                                            ),
                                           ),
-                                          const SizedBox(height: 5),
-                                          Text(
-                                            task["time"] != null
-                                                ? formatDateTime(
-                                                    task["time"].toDate().toLocal(), context)
-                                                : "No time set",
-                                            style: TextStyle(
-                                                fontSize: 14, color: Colors.grey[400]),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 10, vertical: 5),
-                                                decoration: BoxDecoration(
-                                                  color: task["category"] == "Music"
-                                                      ? Colors.purpleAccent
-                                                      : task["category"] == "Movie"
-                                                          ? Colors.lightBlueAccent
-                                                          : task["category"] == "Work"
-                                                              ? Colors.orangeAccent
-                                                              : task["category"] == "Sport"
-                                                                  ? Colors.lightGreenAccent
-                                                                  : task["category"] == "Design"
-                                                                      ? Colors.cyanAccent
-                                                                      : task["category"] ==
-                                                                              "University"
-                                                                          ? Colors.blueAccent
-                                                                          : task["category"] ==
-                                                                                  "Social"
-                                                                              ? Colors
-                                                                                  .pinkAccent
-                                                                              : task["category"] ==
-                                                                                      "Health"
-                                                                                  ? Colors
-                                                                                      .tealAccent
-                                                                                  : task["category"] ==
-                                                                                          "Home"
-                                                                                      ? Colors
-                                                                                          .amberAccent
-                                                                                      : task["category"] ==
-                                                                                              "Grocery"
-                                                                                          ? Colors
-                                                                                              .greenAccent
-                                                                                          : Colors
-                                                                                              .grey,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(Icons.school,
-                                                        color: Colors.white, size: 16),
-                                                    const SizedBox(width: 5),
-                                                    Text(task["category"] ?? "Without a category",
-                                                        style: TextStyle(color: Colors.white)),
-                                                  ],
-                                                ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              task["title"],
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: task["completed"] == true ? Colors.grey[400] : Colors.white,
+                                                decoration: task["completed"] == true ? TextDecoration.lineThrough : null,
+                                                shadows: task["completed"] == true
+                                                    ? [Shadow(color: Colors.black26, blurRadius: 2)]
+                                                    : null,
                                               ),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: 10, vertical: 5),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(color: Colors.grey[700]!),
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      task["priority"] != null ? Icons.flag : Icons.flag_outlined,
-                                                      color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
-                                                      size: 16
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                    Text(
-                                                      task["priority"] != null ? "${task["priority"]}" : "•••",
-                                                      style: TextStyle(
-                                                        color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
-                                                        fontWeight: task["priority"] != null ? FontWeight.w500 : FontWeight.normal,
-                                                      )
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
+                                            ),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        task["time"] != null
+                                            ? formatDateTime(
+                                                task["time"].toDate().toLocal(), context)
+                                            : "No time set",
+                                        style: TextStyle(
+                                            fontSize: 14, color: Colors.grey[400]),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: task["category"] == "Music"
+                                                  ? Colors.purpleAccent
+                                                  : task["category"] == "Movie"
+                                                      ? Colors.lightBlueAccent
+                                                      : task["category"] == "Work"
+                                                          ? Colors.orangeAccent
+                                                          : task["category"] == "Sport"
+                                                              ? Colors.lightGreenAccent
+                                                              : task["category"] == "Design"
+                                                                  ? Colors.cyanAccent
+                                                                  : task["category"] ==
+                                                                          "University"
+                                                                      ? Colors.blueAccent
+                                                                      : task["category"] ==
+                                                                              "Social"
+                                                                          ? Colors
+                                                                              .pinkAccent
+                                                                          : task["category"] ==
+                                                                                  "Health"
+                                                                              ? Colors
+                                                                                  .tealAccent
+                                                                              : task["category"] ==
+                                                                                      "Home"
+                                                                                  ? Colors
+                                                                                      .amberAccent
+                                                                                  : task["category"] ==
+                                                                                          "Grocery"
+                                                                                      ? Colors
+                                                                                          .greenAccent
+                                                                                      : Colors
+                                                                                          .grey,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.school,
+                                                    color: Colors.white, size: 16),
+                                                const SizedBox(width: 5),
+                                                    Text(task["category"] ?? "Without a category",
+                                                    style: TextStyle(color: Colors.white)),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.grey[700]!),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  task["priority"] != null ? Icons.flag : Icons.flag_outlined,
+                                                  color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
+                                                  size: 16
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  task["priority"] != null ? "${task["priority"]}" : "•••",
+                                                  style: TextStyle(
+                                                    color: task["priority"] != null ? _priorityColor(task["priority"]) : Colors.grey[400],
+                                                    fontWeight: task["priority"] != null ? FontWeight.w500 : FontWeight.normal,
+                                                  )
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                       ),
                                     ),
                                   ),

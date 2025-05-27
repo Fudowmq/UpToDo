@@ -19,8 +19,7 @@ dependencies:
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
   logger: ^2.5.0
-  intl: ^0.20.2
-  table_calendar: ^3.2.0
+  table_calendar: ^3.0.9
   fl_chart: ^0.65.0
   image_picker: ^1.0.7
   shared_preferences: ^2.2.2
@@ -35,3 +34,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/image/
+    - assets/image/en_flag.png
+    - assets/image/ru_flag.png

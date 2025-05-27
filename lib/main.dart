@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uptodo/screens/auth/login_screen.dart';
 import 'package:uptodo/screens/auth/register_screen.dart';
+import 'package:uptodo/services/language_service.dart';
 import 'firebase_options.dart';
-import 'package:flutter/material.dart';
 import 'dart:async';
 
 void main() async {
@@ -10,18 +12,24 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Инициализируем Firebase Storage
+  FirebaseStorage.instance.setMaxUploadRetryTime(const Duration(seconds: 3));
   runApp(const MyApp());
 }
 
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'UpTodo',
       debugShowCheckedModeBanner: false,
-      title: 'UpToDo',
       theme: ThemeData.dark(),
       home: const SplashScreen(),
     );
