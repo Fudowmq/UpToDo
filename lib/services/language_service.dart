@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
 
 class LanguageService {
   static const String _languageKey = 'app_language';
@@ -24,4 +23,4 @@ class LanguageService {
         return 'English';
     }
   }
-} 
+}

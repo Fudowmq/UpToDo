@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -35,7 +37,6 @@ class HomeScreenDB extends StatelessWidget {
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               var task = tasks[index];
-              var category = task["category"] ?? "Without a category";
 
               return ListTile(
                 leading: Icon(Icons.category, color: Colors.white),

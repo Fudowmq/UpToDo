@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:uptodo/screens/auth/login_screen.dart';
 import 'package:uptodo/screens/auth/register_screen.dart';
-import 'package:uptodo/services/language_service.dart';
 import 'firebase_options.dart';
 import 'dart:async';
 

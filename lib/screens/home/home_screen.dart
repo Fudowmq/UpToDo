@@ -19,7 +19,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TaskFilter _selectedFilter = TaskFilter.today;
-  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -40,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (querySnapshot.docs.isNotEmpty && querySnapshot.docs.first.data()['imageUrl'] != null) {
           setState(() {
-            _profileImageUrl = querySnapshot.docs.first.data()['imageUrl'] as String;
           });
         }
       } catch (e) {

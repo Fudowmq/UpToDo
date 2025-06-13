@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'focus_screen.dart';
@@ -20,11 +19,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  File? _image;
   String? _imageBase64;
   String _userName = '';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final User? _currentUser = FirebaseAuth.instance.currentUser;
   String _currentLanguage = 'en';
 
@@ -33,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadCurrentLanguage();
     if (_currentUser?.displayName != null && _currentUser!.displayName!.isNotEmpty) {
-      _userName = _currentUser!.displayName!;
+      _userName = _currentUser.displayName!;
     }
     _loadUserName();
   }
@@ -43,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final querySnapshot = await _firestore
             .collection('tasks')
-            .where('userId', isEqualTo: _currentUser!.uid)
+            .where('userId', isEqualTo: _currentUser.uid)
             .where('type', isEqualTo: 'profile')
             .limit(1)
             .get();
@@ -190,17 +187,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Обновляем в Firestore
           final querySnapshot = await _firestore
               .collection('tasks')
-              .where('userId', isEqualTo: _currentUser!.uid)
+              .where('userId', isEqualTo: _currentUser.uid)
               .where('type', isEqualTo: 'profile')
               .get();
 
           if (querySnapshot.docs.isEmpty) {
             await _firestore.collection('tasks').add({
-              'userId': _currentUser!.uid,
+              'userId': _currentUser.uid,
               'type': 'profile',
               'imageBase64': base64Image,
               'name': _userName,
-              'email': _currentUser!.email,
+              'email': _currentUser.email,
               'createdAt': FieldValue.serverTimestamp(),
             });
           } else {
@@ -214,7 +211,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           setState(() {
-            _image = file;
             _imageBase64 = base64Image;
           });
 
@@ -967,7 +963,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text("Account",
-                      style: const TextStyle(fontSize: 14, color: Colors.black)),
+                      style: TextStyle(fontSize: 14, color: Colors.black)),
                 ),
                 _buildProfileOption(
                     Icons.person,
@@ -985,7 +981,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text("UpTodo",
-                      style: const TextStyle(fontSize: 14, color: Colors.black)),
+                      style: TextStyle(fontSize: 14, color: Colors.black)),
                 ),
                 _buildProfileOption(
                     Icons.info_outline,
