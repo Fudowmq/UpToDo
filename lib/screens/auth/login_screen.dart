@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:uptodo/services/auth_service.dart';
 import 'package:uptodo/screens/home/home_screen.dart';
 import 'package:uptodo/screens/auth/register_screen.dart';
+import 'package:uptodo/database/auth_service_android.dart' as android_auth;
+import 'package:uptodo/database/auth_service_ios.dart' as ios_auth;
+import 'dart:io' show Platform;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,6 +41,40 @@ class _LoginScreenState extends State<LoginScreen> {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    try {
+      final user = await android_auth.AuthService().signInWithGoogle();
+      if (user != null) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in failed: user is null')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _loginWithApple() async {
+    if (!Platform.isIOS && !Platform.isMacOS) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple Sign-In only available on iOS/macOS')),
+      );
+      return;
+    }
+    final user = await ios_auth.AuthService().signInWithApple();
+    if (user != null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple sign-in failed')),
       );
     }
   }
@@ -151,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: _loginWithGoogle,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.blueAccent),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -171,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: _loginWithApple,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.blueAccent),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

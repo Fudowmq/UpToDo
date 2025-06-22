@@ -5,14 +5,65 @@ import 'package:uptodo/screens/auth/login_screen.dart';
 import 'package:uptodo/screens/auth/register_screen.dart';
 import 'firebase_options.dart';
 import 'dart:async';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+Future<void> _initNotifications() async {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  tz.initializeTimeZones();
+}
+
+Future<void> scheduleDailyFocusNotification() async {
+  const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails(
+    'focus_channel_id',
+    'Focus Reminders',
+    channelDescription: 'Daily reminder to use Focus Mode',
+    importance: Importance.max,
+    priority: Priority.high,
+    showWhen: false,
+  );
+  const NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+
+  final now = tz.TZDateTime.now(tz.local);
+  var firstNotificationDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, 10);
+  if (now.isAfter(firstNotificationDate)) {
+    firstNotificationDate = firstNotificationDate.add(const Duration(days: 1));
+  }
+
+  await flutterLocalNotificationsPlugin.zonedSchedule(
+    0,
+    'Время для фокуса!',
+    'Не забудь уделить время фокус-работе! Включи Focus Mode и достигай целей эффективнее 🚀',
+    firstNotificationDate,
+    platformChannelSpecifics,
+    androidAllowWhileIdle: true,
+    uiLocalNotificationDateInterpretation:
+        UILocalNotificationDateInterpretation.absoluteTime,
+    matchDateTimeComponents: DateTimeComponents.time,
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Инициализируем Firebase Storage
+
   FirebaseStorage.instance.setMaxUploadRetryTime(const Duration(seconds: 3));
+  debugPaintSizeEnabled = false;
+  await _initNotifications();
+  await scheduleDailyFocusNotification();
   runApp(const MyApp());
 }
 
@@ -39,7 +90,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
+
   _SplashScreenState createState() => _SplashScreenState();
 }
 

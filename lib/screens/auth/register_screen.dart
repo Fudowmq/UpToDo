@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:uptodo/services/auth_service.dart';
 import 'package:uptodo/screens/home/home_screen.dart';
 import 'package:uptodo/screens/auth/login_screen.dart';
+import 'package:uptodo/database/auth_service_android.dart' as android_auth;
+import 'package:uptodo/database/auth_service_ios.dart' as ios_auth;
+import 'dart:io' show Platform;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -44,6 +47,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
+
+  Future<void> _registerWithGoogle() async {
+    try {
+      final user = await android_auth.AuthService().signInWithGoogle();
+      if (user != null) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in failed: user is null')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _registerWithApple() async {
+    if (!Platform.isIOS && !Platform.isMacOS) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple Sign-In only available on iOS/macOS')),
+      );
+      return;
+    }
+    final user = await ios_auth.AuthService().signInWithApple();
+    if (user != null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Apple sign-in failed')),
       );
     }
   }
@@ -112,9 +149,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              _buildSocialButton("Login with Google", "assets/image/google.png", () {}),
+              _buildSocialButton("Login with Google", "assets/image/google.png", _registerWithGoogle),
               const SizedBox(height: 10),
-              _buildSocialButton("Login with Apple", "assets/image/apple.png", () {}),
+              _buildSocialButton("Login with Apple", "assets/image/apple.png", _registerWithApple),
               const SizedBox(height: 15),
               Center(
                 child: GestureDetector(

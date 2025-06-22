@@ -947,21 +947,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 18),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text("Settings",
-                      style: TextStyle(fontSize: 14, color: Colors.black)),
-                ),
-                _buildProfileOption(
-                  Icons.language,
-                  "Change Language",
-                  _showLanguageDialog,
-                ),
-                _buildProfileOption(Icons.settings, "App Settings", () {
-                  _showDialog(
-                      "App Settings", "Настройки приложения пока недоступны.");
-                }),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
                   child: Text("Account",
                       style: TextStyle(fontSize: 14, color: Colors.black)),
                 ),
